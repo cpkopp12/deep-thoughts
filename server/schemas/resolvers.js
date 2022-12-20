@@ -1,6 +1,9 @@
+//DECLARATIONS: mongoose query, models, authentication error ------------------
 const { Query } = require("mongoose");
 const { User, Thought } = require('../models');
+const { AuthenticationError } = require('apollo-server-express');
 
+//RESOLVERS =========================================================
 const resolvers = {
     Query: {
         users: async () => {
@@ -22,7 +25,30 @@ const resolvers = {
         thought: async (parent, { _id }) => {
             return Thought.findOne({ _id });
         }
+    },
+    Mutation: {
+        addUser: async (parent, args) => {
+            const user = await User.create(args);
+
+            return user;
+        },
+        login: async (parent, { email, password }) => {
+            const user = await User.findOne({ email });
+
+            if (!user) {
+                throw new AuthenticationError('Incorrect credentials');
+            }
+
+            const correctPw = await user.isCorrectPassword(password);
+
+            if (!correctPw) {
+                throw new AuthenticationError('Incorrect credentials')
+            }
+
+            return user;
+        }
     }
 };
 
+//export resolvers ------------------
 module.exports = resolvers;
